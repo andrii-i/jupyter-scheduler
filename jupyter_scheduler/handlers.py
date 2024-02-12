@@ -359,6 +359,7 @@ class RuntimeEnvironmentsHandler(ExtensionHandlerMixin, JobHandlersMixin, APIHan
         """Returns names of available runtime environments and output formats mappings"""
         try:
             environments = await ensure_async(self.environments_manager.list_environments())
+            self.log.info("environments", environments)
             output_formats = await ensure_async(self.environments_manager.output_formats_mapping())
         except EnvironmentRetrievalError as e:
             raise HTTPError(500, str(e))
