@@ -42,6 +42,7 @@ import {
 
 import { Box, Stack } from '@mui/system';
 import { getErrorMessage } from '../util/errors';
+import { MLFlowCheckbox } from '../components/mlflow-checkbox';
 
 export interface ICreateJobProps {
   model: ICreateJobModel;
@@ -504,6 +505,7 @@ export function CreateJob(props: ICreateJobProps): JSX.Element {
             environmentList={environmentList}
             value={props.model.environment}
           />
+          <MLFlowCheckbox onChange={handleInputChange} />
           <OutputFormatPicker
             label={trans.__('Output formats')}
             name="outputFormat"
