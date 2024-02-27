@@ -42,7 +42,7 @@ import {
 
 import { Box, Stack } from '@mui/system';
 import { getErrorMessage } from '../util/errors';
-import { MLFlowCheckbox } from '../components/mlflow-checkbox';
+import { MLFlowLoggingControl } from '../components/mlflow-checkbox';
 
 export interface ICreateJobProps {
   model: ICreateJobModel;
@@ -175,7 +175,6 @@ export function CreateJob(props: ICreateJobProps): JSX.Element {
 
   const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
     const target = event.target;
-
     const parameterNameIdx = parameterNameMatch(target.name);
     const parameterValueIdx = parameterValueMatch(target.name);
     const newParams = props.model.parameters || [];
@@ -321,7 +320,10 @@ export function CreateJob(props: ICreateJobProps): JSX.Element {
       compute_type: props.model.computeType,
       idempotency_token: props.model.idempotencyToken,
       tags: props.model.tags,
-      runtime_environment_parameters: props.model.runtimeEnvironmentParameters
+      runtime_environment_parameters: props.model.runtimeEnvironmentParameters,
+      mlflow_logging: props.model.mlflowLogging,
+      mlflow_experiment_id: props.model.mlflowExperimentId,
+      mlflow_run_id: props.model.mlflowRunId
     };
 
     if (props.model.parameters !== undefined) {
@@ -369,7 +371,9 @@ export function CreateJob(props: ICreateJobProps): JSX.Element {
       tags: props.model.tags,
       runtime_environment_parameters: props.model.runtimeEnvironmentParameters,
       schedule: props.model.schedule,
-      timezone: props.model.timezone
+      timezone: props.model.timezone,
+      mlflow_logging: props.model.mlflowLogging,
+      mlflow_experiment_id: props.model.mlflowExperimentId
     };
 
     if (props.model.parameters !== undefined) {
@@ -505,7 +509,7 @@ export function CreateJob(props: ICreateJobProps): JSX.Element {
             environmentList={environmentList}
             value={props.model.environment}
           />
-          <MLFlowCheckbox onChange={handleInputChange} />
+          <MLFlowLoggingControl onChange={handleInputChange} />
           <OutputFormatPicker
             label={trans.__('Output formats')}
             name="outputFormat"

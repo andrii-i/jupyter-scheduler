@@ -4,8 +4,10 @@ import random
 import shutil
 import subprocess
 from typing import Dict, Optional, Type, Union
+from uuid import uuid4
 
 import fsspec
+import mlflow
 import psutil
 from jupyter_core.paths import jupyter_data_dir
 from jupyter_server.transutils import _i18n
@@ -41,6 +43,10 @@ from jupyter_scheduler.models import (
 )
 from jupyter_scheduler.orm import Job, JobDefinition, create_session
 from jupyter_scheduler.utils import create_output_directory, create_output_filename
+
+MLFLOW_SERVER_HOST = "127.0.0.1"
+MLFLOW_SERVER_PORT = "5000"
+MLFLOW_SERVER_URI = f"http://{MLFLOW_SERVER_HOST}:{MLFLOW_SERVER_PORT}"
 
 
 class BaseScheduler(LoggingConfigurable):
@@ -348,16 +354,13 @@ class Scheduler(BaseScheduler):
             [
                 "mlflow",
                 "server",
-                "--backend-store-uri",
-                "./mlruns",
-                "--default-artifact-root",
-                "./mlartifacts",
                 "--host",
-                "0.0.0.0",
+                MLFLOW_SERVER_HOST,
                 "--port",
-                "5000",
+                MLFLOW_SERVER_PORT,
             ]
         )
+        mlflow.set_tracking_uri(MLFLOW_SERVER_URI)
 
     def __init__(
         self,
@@ -414,6 +417,19 @@ class Scheduler(BaseScheduler):
 
             if not model.output_formats:
                 model.output_formats = []
+
+            mlflow_client = mlflow.MlflowClient()
+
+            if model.job_definition_id and model.mlflow_experiment_id:
+                experiment_id = model.mlflow_experiment_id
+            else:
+                experiment_id = mlflow_client.create_experiment(f"{model.name}-{uuid4()}")
+                model.mlflow_experiment_id = experiment_id
+                input_file_path = os.path.join(self.root_dir, model.input_uri)
+                mlflow.log_artifact(input_file_path, "input")
+
+            mlflow_run = mlflow_client.create_run(experiment_id=experiment_id, run_name=model.name)
+            model.mlflow_run_id = mlflow_run.info.run_id
 
             job = Job(**model.dict(exclude_none=True, exclude={"input_uri"}))
             session.add(job)
@@ -552,6 +568,12 @@ class Scheduler(BaseScheduler):
         with self.db_session() as session:
             if not self.file_exists(model.input_uri):
                 raise InputUriError(model.input_uri)
+
+            mlflow_client = mlflow.MlflowClient()
+            experiment_id = mlflow_client.create_experiment(f"{model.name}-{uuid4()}")
+            model.mlflow_experiment_id = experiment_id
+            input_file_path = os.path.join(self.root_dir, model.input_uri)
+            mlflow.log_artifact(input_file_path, "input")
 
             job_definition = JobDefinition(**model.dict(exclude_none=True, exclude={"input_uri"}))
             session.add(job_definition)
