@@ -2,7 +2,9 @@ import multiprocessing as mp
 import os
 import random
 import shutil
+import signal
 import subprocess
+import sys
 from typing import Dict, Optional, Type, Union
 from uuid import uuid4
 
@@ -350,7 +352,7 @@ class Scheduler(BaseScheduler):
     task_runner = Instance(allow_none=True, klass="jupyter_scheduler.task_runner.BaseTaskRunner")
 
     def start_mlflow_server(self):
-        subprocess.Popen(
+        mlflow_process = subprocess.Popen(
             [
                 "mlflow",
                 "server",
@@ -358,9 +360,23 @@ class Scheduler(BaseScheduler):
                 MLFLOW_SERVER_HOST,
                 "--port",
                 MLFLOW_SERVER_PORT,
-            ]
+            ],
+            preexec_fn=os.setsid,
         )
         mlflow.set_tracking_uri(MLFLOW_SERVER_URI)
+        return mlflow_process
+
+    def stop_mlflow_server(self):
+        if self.mlflow_process is not None:
+            os.killpg(os.getpgid(self.mlflow_process.pid), signal.SIGTERM)
+            self.mlflow_process.wait()
+            self.mlflow_process = None
+            print("MLFlow server stopped")
+
+    def mlflow_signal_handler(self, signum, frame):
+        print("Shutting down MLFlow server")
+        self.stop_mlflow_server()
+        sys.exit(0)
 
     def __init__(
         self,
@@ -377,7 +393,9 @@ class Scheduler(BaseScheduler):
         if self.task_runner_class:
             self.task_runner = self.task_runner_class(scheduler=self, config=config)
 
-        self.start_mlflow_server()
+        self.mlflow_process = self.start_mlflow_server()
+        signal.signal(signal.SIGINT, self.mlflow_signal_handler)
+        signal.signal(signal.SIGTERM, self.mlflow_signal_handler)
 
     @property
     def db_session(self):
