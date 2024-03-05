@@ -179,7 +179,7 @@ class DefaultExecutionManager(ExecutionManager):
                 new_output_path = os.path.join(directory, file_name_final)
                 shutil.copy(output_path, new_output_path)
                 timestamp = "-".join(file_name_parts[-7:]).split(".")[0]
-                mlflow.log_param("timestamp", timestamp)
+                mlflow.log_param("job_created", timestamp)
                 mlflow.log_artifact(new_output_path, "")
                 os.remove(new_output_path)
 
