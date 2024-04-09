@@ -1,4 +1,5 @@
 import io
+import multiprocessing
 import os
 import shutil
 import tarfile
@@ -11,8 +12,14 @@ import nbconvert
 import nbformat
 from nbconvert.preprocessors import CellExecutionError, ExecutePreprocessor
 
+from jupyter_scheduler.download_manager import (
+    DescribeDownloadCache,
+    DownloadCacheRecord,
+    DownloadTask,
+    MultiprocessQueue,
+)
 from jupyter_scheduler.models import DescribeJob, JobFeature, JobFile, Status
-from jupyter_scheduler.orm import Job, create_session
+from jupyter_scheduler.orm import Job, create_session, generate_uuid
 from jupyter_scheduler.parameterize import add_parameters
 from jupyter_scheduler.utils import get_utc_timestamp
 
@@ -29,11 +36,19 @@ class ExecutionManager(ABC):
     _model = None
     _db_session = None
 
-    def __init__(self, job_id: str, root_dir: str, db_url: str, staging_paths: Dict[str, str]):
+    def __init__(
+        self,
+        job_id: str,
+        root_dir: str,
+        db_url: str,
+        staging_paths: Dict[str, str],
+        download_queue,
+    ):
         self.job_id = job_id
         self.staging_paths = staging_paths
         self.root_dir = root_dir
         self.db_url = db_url
+        self.download_queue = download_queue
 
     @property
     def model(self):
@@ -147,6 +162,31 @@ class DefaultExecutionManager(ExecutionManager):
                 output, _ = cls().from_notebook_node(nb)
                 with fsspec.open(self.staging_paths[output_format], "w", encoding="utf-8") as f:
                     f.write(output)
+            self.download_from_staging(job.job_id)
+
+    def download_from_staging(self, job_id: str):
+        download_initiated_time = get_utc_timestamp()
+        download_id = generate_uuid()
+        download_cache = DescribeDownloadCache(
+            job_id=job_id,
+            download_id=download_id,
+            download_initiated_time=download_initiated_time,
+        )
+        with self.db_session() as session:
+            new_download = DownloadCacheRecord(**download_cache.dict())
+            session.add(new_download)
+            session.commit()
+        download_task = DownloadTask(
+            job_id=job_id,
+            download_id=download_id,
+            download_initiated_time=download_initiated_time,
+        )
+        self.download_queue.put(download_task)
+        # print(
+        #     "\n\n***\n ExecutionManager.download_from_staging uuid and task being put on a qeueue"
+        # )
+        # print(download_id)
+        # print(download_task)
 
     def add_side_effects_files(self, staging_dir):
         """Scan for side effect files potentially created after input file execution and update the job's packaged_files with these files"""
