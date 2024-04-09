@@ -4,8 +4,8 @@ from multiprocessing import Queue
 from typing import List, Optional
 
 from jupyter_scheduler.orm import DownloadCacheRecord, create_session, generate_uuid
-from jupyter_scheduler.utils import get_utc_timestamp
 from jupyter_scheduler.pydantic_v1 import BaseModel
+from jupyter_scheduler.utils import get_utc_timestamp
 
 
 class DescribeDownloadCache(BaseModel):
