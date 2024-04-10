@@ -12,11 +12,7 @@ import nbconvert
 import nbformat
 from nbconvert.preprocessors import CellExecutionError, ExecutePreprocessor
 
-from jupyter_scheduler.download_manager import (
-    DescribeDownload,
-    Downloads,
-    DownloadTask,
-)
+from jupyter_scheduler.download_manager import DescribeDownload, Downloads, DownloadTask
 from jupyter_scheduler.models import DescribeJob, JobFeature, JobFile, Status
 from jupyter_scheduler.orm import Job, create_session, generate_uuid
 from jupyter_scheduler.parameterize import add_parameters
