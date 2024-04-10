@@ -300,6 +300,7 @@ class DescribeDownload(BaseModel):
     job_id: str
     download_id: str
     download_initiated_time: int
+    redownload: bool
 
     class Config:
         orm_mode = True
