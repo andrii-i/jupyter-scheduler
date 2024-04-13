@@ -5,7 +5,7 @@ import pytest
 
 from jupyter_scheduler.orm import create_session, create_tables
 from jupyter_scheduler.scheduler import Scheduler
-from jupyter_scheduler.tests.mocks import MockEnvironmentManager
+from jupyter_scheduler.tests.mocks import MockDownloadManager, MockEnvironmentManager
 
 pytest_plugins = ("jupyter_server.pytest_plugin",)
 
@@ -46,5 +46,8 @@ def jp_scheduler_db():
 @pytest.fixture
 def jp_scheduler(jp_data_dir):
     return Scheduler(
-        db_url=DB_URL, root_dir=str(jp_data_dir), environments_manager=MockEnvironmentManager()
+        db_url=DB_URL,
+        root_dir=str(jp_data_dir),
+        environments_manager=MockEnvironmentManager(),
+        download_manager=MockDownloadManager(DB_URL),
     )
