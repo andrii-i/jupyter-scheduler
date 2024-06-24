@@ -60,7 +60,6 @@ def jp_scheduler(jp_scheduler_db_url, jp_scheduler_root_dir, jp_scheduler_db):
         db_url=jp_scheduler_db_url,
         root_dir=str(jp_scheduler_root_dir),
         environments_manager=MockEnvironmentManager(),
-        dask_client_future=AsyncMock(),
     )
 
 
