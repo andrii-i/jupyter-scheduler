@@ -4,7 +4,6 @@ import random
 import shutil
 from typing import Awaitable, Dict, List, Optional, Type, Union
 
-import fsspec
 import psutil
 from dask.distributed import Client as DaskClient
 from jupyter_core.paths import jupyter_data_dir
@@ -41,7 +40,8 @@ from jupyter_scheduler.models import (
 )
 from jupyter_scheduler.orm import Job, JobDefinition, create_session
 from jupyter_scheduler.utils import (
-    copy_directory,
+    copy_input_file,
+    copy_input_folder,
     create_output_directory,
     create_output_filename,
 )
@@ -435,22 +435,6 @@ class Scheduler(BaseScheduler):
 
         return self._db_session
 
-    def copy_input_file(self, input_uri: str, copy_to_path: str):
-        """Copies the input file to the staging directory"""
-        input_filepath = os.path.join(self.root_dir, input_uri)
-        with fsspec.open(input_filepath) as input_file:
-            with fsspec.open(copy_to_path, "wb") as output_file:
-                output_file.write(input_file.read())
-
-    def copy_input_folder(self, input_uri: str, nb_copy_to_path: str) -> List[str]:
-        """Copies the input file along with the input directory to the staging directory, returns the list of copied files relative to the staging directory"""
-        input_dir_path = os.path.dirname(os.path.join(self.root_dir, input_uri))
-        staging_dir = os.path.dirname(nb_copy_to_path)
-        return copy_directory(
-            source_dir=input_dir_path,
-            destination_dir=staging_dir,
-        )
-
     async def create_job(self, model: CreateJob) -> str:
         if not model.job_definition_id and not self.file_exists(model.input_uri):
             raise InputUriError(model.input_uri)
@@ -481,19 +465,26 @@ class Scheduler(BaseScheduler):
             session.add(job)
             session.commit()
 
+            dask: DaskClient = await self.dask_client_future
+
             staging_paths = self.get_staging_paths(DescribeJob.from_orm(job))
             if model.package_input_folder:
-                copied_files = self.copy_input_folder(model.input_uri, staging_paths["input"])
+                copy_future = dask.submit(
+                    copy_input_folder, self.root_dir, model.input_uri, staging_paths["input"]
+                )
+                copied_files = await copy_future.result()
                 input_notebook_filename = os.path.basename(model.input_uri)
                 job.packaged_files = [
                     file for file in copied_files if file != input_notebook_filename
                 ]
                 session.commit()
             else:
-                self.copy_input_file(model.input_uri, staging_paths["input"])
+                copy_future = dask.submit(
+                    copy_input_file, self.root_dir, model.input_uri, staging_paths["input"]
+                )
+                await copy_future.result()
 
-            dask_client: DaskClient = await self.dask_client_future
-            future = dask_client.submit(
+            process_future = dask.submit(
                 self.execution_manager_class(
                     job_id=job.job_id,
                     staging_paths=staging_paths,
@@ -502,7 +493,7 @@ class Scheduler(BaseScheduler):
                 ).process
             )
 
-            job.pid = future.key
+            job.pid = process_future.key
             session.commit()
 
             job_id = job.job_id
@@ -610,7 +601,7 @@ class Scheduler(BaseScheduler):
                         session.commit()
                         break
 
-    def create_job_definition(self, model: CreateJobDefinition) -> str:
+    async def create_job_definition(self, model: CreateJobDefinition) -> str:
         with self.db_session() as session:
             if not self.file_exists(model.input_uri):
                 raise InputUriError(model.input_uri)
@@ -623,23 +614,30 @@ class Scheduler(BaseScheduler):
             job_definition_id = job_definition.job_definition_id
             job_definition_schedule = job_definition.schedule
 
+            dask: DaskClient = await self.dask_client_future
             staging_paths = self.get_staging_paths(DescribeJobDefinition.from_orm(job_definition))
             if model.package_input_folder:
-                copied_files = self.copy_input_folder(model.input_uri, staging_paths["input"])
+                future = dask.submit(
+                    copy_input_folder, self.root_dir, model.input_uri, staging_paths["input"]
+                )
+                copied_files = await future.result()
                 input_notebook_filename = os.path.basename(model.input_uri)
                 job_definition.packaged_files = [
                     file for file in copied_files if file != input_notebook_filename
                 ]
                 session.commit()
             else:
-                self.copy_input_file(model.input_uri, staging_paths["input"])
+                future = dask.submit(
+                    copy_input_file, self.root_dir, model.input_uri, staging_paths["input"]
+                )
+                await future.result()
 
         if self.task_runner and job_definition_schedule:
             self.task_runner.add_job_definition(job_definition_id)
 
         return job_definition_id
 
-    def update_job_definition(self, job_definition_id: str, model: UpdateJobDefinition):
+    async def update_job_definition(self, job_definition_id: str, model: UpdateJobDefinition):
         with self.db_session() as session:
             filtered_query = session.query(JobDefinition).filter(
                 JobDefinition.job_definition_id == job_definition_id
@@ -665,12 +663,18 @@ class Scheduler(BaseScheduler):
             updates = model.dict(exclude_none=True, exclude={"input_uri"})
 
             if model.input_uri:
+                dask: DaskClient = await self.dask_client_future
                 new_input_filename = os.path.basename(model.input_uri)
                 staging_paths = self.get_staging_paths(describe_job_definition)
                 staging_directory = os.path.dirname(staging_paths["input"])
-                self.copy_input_file(
-                    model.input_uri, os.path.join(staging_directory, new_input_filename)
+                future = dask.submit(
+                    copy_input_file,
+                    self.root_dir,
+                    model.input_uri,
+                    os.path.join(staging_directory, new_input_filename),
                 )
+                future.result()
+
                 updates["input_filename"] = new_input_filename
 
             filtered_query.update(updates)

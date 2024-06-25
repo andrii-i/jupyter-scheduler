@@ -113,3 +113,21 @@ def copy_directory(
             copied_files.append(rel_path)
 
     return copied_files
+
+
+def copy_input_file(root_dir: str, input_uri: str, copy_to_path: str):
+    """Copies the input file to the staging directory"""
+    input_filepath = os.path.join(root_dir, input_uri)
+    with fsspec.open(input_filepath) as input_file:
+        with fsspec.open(copy_to_path, "wb") as output_file:
+            output_file.write(input_file.read())
+
+
+def copy_input_folder(root_dir: str, input_uri: str, nb_copy_to_path: str) -> List[str]:
+    """Copies the input file along with the input directory to the staging directory, returns the list of copied files relative to the staging directory"""
+    input_dir_path = os.path.dirname(os.path.join(root_dir, input_uri))
+    staging_dir = os.path.dirname(nb_copy_to_path)
+    return copy_directory(
+        source_dir=input_dir_path,
+        destination_dir=staging_dir,
+    )
