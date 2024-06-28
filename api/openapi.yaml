@@ -342,7 +342,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'  
+                $ref: '#/components/schemas/Error'
 
   /v2/job_definitions/{job_definition_id}/deploy:
     post:
@@ -396,7 +396,7 @@ paths:
           in: path
           required: true
           schema:
-            type: string      
+            type: string
       requestBody:
         description: Data for updating the task
         required: true
@@ -416,7 +416,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'      
+                $ref: '#/components/schemas/Error'
     delete:
       summary: Delete a specific task from job definition
       parameters:
@@ -429,7 +429,7 @@ paths:
           in: path
           required: true
           schema:
-            type: string        
+            type: string
       responses:
         '204':
           description: Successfully deleted the task from job definition.
@@ -438,7 +438,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error' 
+                $ref: '#/components/schemas/Error'
 
   /v2/scheduler/jobs:
     get:
@@ -465,11 +465,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'     
+                $ref: '#/components/schemas/Error'
 
   /v2/scheduler/jobs/{job_id}:
     post:
-      summary:  Manual Run a specific job 
+      summary:  Manual Run a specific job
       parameters:
         - name: job_id
           in: path
@@ -502,7 +502,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'  
+                $ref: '#/components/schemas/Error'
 
   /v2/scheduler/jobs/{job_id}/task_runs/{task_id}/download_files:
     get:
@@ -695,7 +695,7 @@ paths:
               $ref: '#/components/schemas/DSFile'
       responses:
         '201':
-          description: File created  
+          description: File created
 
   /files/{fileId}:
     get:
@@ -908,13 +908,13 @@ components:
         externalLinks:
           type: array
           items:
-            type: string 
+            type: string
         input_file_id:
           type: string
         output_file_id:
           type: string
         outputPreviewLink:
-          type: string 
+          type: string
         output_formats:
           type: array
           items:
@@ -926,7 +926,7 @@ components:
         taskTimeout:
           type: string
         showOutputInEmail:
-          type: boolean                    
+          type: boolean
         task_runs:
           type: array
           items:
@@ -1005,13 +1005,13 @@ components:
           externalLinks:
             type: array
             items:
-              type: string 
+              type: string
           input_file_id:
             type: string
           output_file_id:
             type: string
           outputPreviewLink:
-            type: string 
+            type: string
           output_formats:
             type: array
             items:
@@ -1023,7 +1023,7 @@ components:
           taskTimeout:
             type: string
           showOutputInEmail:
-            type: boolean                    
+            type: boolean
           task_runs:
             type: array
             items:
@@ -1069,7 +1069,7 @@ components:
         output_formats:
          type: array
           items:
-            type: string                   
+            type: string
         runtimeProperties:
           type: object
           additionalProperties:
@@ -1136,7 +1136,7 @@ components:
         kernelSpecVersion:
           type: string
         kernelProfileId:
-          type: string          
+          type: string
         kernelProfileVersion:
           type: string
         namespaceId:
@@ -1164,7 +1164,7 @@ components:
         taskTimeout:
           type: string
         showOutputInEmail:
-          type: boolean          
+          type: boolean
         output_formats:
           type: array
           items:
@@ -1184,17 +1184,17 @@ components:
         input_file_id:
           type: string
         active:
-          type: boolean                      
+          type: boolean
         status:
           type: string
         statusMessage:
           type: string
         input_file_path:
-          type: string 
+          type: string
         externalLinks:
           type: array
           items:
-            type: string          
+            type: string
         timezone:
           type: string
         job_definition_id:
@@ -1204,9 +1204,9 @@ components:
           additionalProperties:
             type: string
         version:
-          type: string 
+          type: string
         deploy_time:
-          type: integer                 
+          type: integer
         create_time:
           type: integer
         update_time:
@@ -1341,7 +1341,7 @@ components:
         kernelSpecVersion:
           type: string
         kernelProfileId:
-          type: string          
+          type: string
         kernelProfileVersion:
           type: string
         namespaceId:
@@ -1383,7 +1383,7 @@ components:
         lastModifiedAt:
           type: string
         status:
-          type: string         
+          type: string
         statusMessage:
           type: string
         input_file_id:
@@ -1404,7 +1404,7 @@ components:
         kernelSpecVersion:
           type: string
         kernelProfileId:
-          type: string          
+          type: string
         kernelProfileVersion:
           type: string
         status:
@@ -1452,7 +1452,7 @@ components:
         update_time:
           type: string
         status:
-          type: string         
+          type: string
         statusMessage:
           type: string
         input_file_id:
