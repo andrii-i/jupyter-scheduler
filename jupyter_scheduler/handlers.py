@@ -19,6 +19,7 @@ from jupyter_scheduler.models import (
     CreateJob,
     CreateJobDefinition,
     CreateJobFromDefinition,
+    CreateWorkflow,
     ListJobDefinitionsQuery,
     ListJobsQuery,
     SortDirection,
@@ -415,3 +416,29 @@ class FilesDownloadHandler(ExtensionHandlerMixin, APIHandler):
         else:
             self.set_status(204)
             self.finish()
+
+
+class WorkflowHandler(ExtensionHandlerMixin, JobHandlersMixin, APIHandler):
+    @authenticated
+    async def post(self):
+        payload = self.get_json_body()
+        try:
+            job_definition_id = await ensure_async(
+                self.scheduler.create_workflow(CreateWorkflow(**payload))
+            )
+        except ValidationError as e:
+            self.log.exception(e)
+            raise HTTPError(500, str(e)) from e
+        except InputUriError as e:
+            self.log.exception(e)
+            raise HTTPError(500, str(e)) from e
+        except SchedulerError as e:
+            self.log.exception(e)
+            raise HTTPError(500, str(e)) from e
+        except Exception as e:
+            self.log.exception(e)
+            raise HTTPError(
+                500, "Unexpected error occurred during creation of job definition."
+            ) from e
+        else:
+            self.finish(json.dumps(dict(job_definition_id=job_definition_id)))

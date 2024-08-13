@@ -222,6 +222,22 @@ class CreateJobDefinition(BaseModel):
         return values
 
 
+class CreateWorkflow(BaseModel):
+    tasks: List[str]  # jobId
+    schedule: Optional[str] = None
+    timezone: Optional[str] = None
+    # runtime_environment_name: str
+    # runtime_environment_parameters: Optional[Dict[str, EnvironmentParameterValues]]
+    # output_formats: Optional[List[str]] = None
+    # parameters: Optional[Dict[str, str]] = None
+    # tags: Optional[Tags] = None
+    # name: str
+    # output_filename_template: Optional[str] = OUTPUT_FILENAME_TEMPLATE
+    # compute_type: Optional[str] = None
+
+    # package_input_folder: Optional[bool] = None
+
+
 class DescribeJobDefinition(BaseModel):
     input_filename: str = None
     runtime_environment_name: str
