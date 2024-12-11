@@ -398,9 +398,7 @@ class WorkflowDefinitionsDeploymentHandler(ExtensionHandlerMixin, JobHandlersMix
 
 
 class CreateWorkflow(BaseModel):
-    tasks: List[str] = []
-    name: str
-    parameters: Optional[Dict[str, str]] = None
+    input_uri: str
 
 
 class DescribeWorkflow(BaseModel):
