@@ -146,6 +146,8 @@ class JobDefinitionHandler(ExtensionHandlerMixin, JobHandlersMixin, APIHandler):
     @authenticated
     async def patch(self, job_definition_id):
         payload = self.get_json_body()
+        print("job definition patch payload")
+        print(payload)
         try:
             await ensure_async(
                 self.scheduler.update_job_definition(
