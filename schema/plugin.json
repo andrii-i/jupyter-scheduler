@@ -8,6 +8,11 @@
         "command": "scheduling:create-from-filebrowser",
         "selector": ".jp-DirListing-item[data-file-type=\"notebook\"]",
         "rank": 3.9
+      },
+      {
+        "command": "scheduling:create-from-filebrowser",
+        "selector": ".jp-DirListing-item[data-file-type=\"qasm\"]",
+        "rank": 3.9
       }
     ]
   },

@@ -54,8 +54,8 @@ class CondaEnvironmentManager(EnvironmentManager):
                     name=name,
                     label=name,
                     description=f"Environment: {name}",
-                    file_extensions=["ipynb"],
-                    output_formats=["ipynb", "html"],
+                    file_extensions=["ipynb", "qasm"],
+                    output_formats=["ipynb", "html", "json"],
                     metadata={"path": env},
                 )
             )
@@ -66,7 +66,7 @@ class CondaEnvironmentManager(EnvironmentManager):
         return ""
 
     def output_formats_mapping(self) -> Dict[str, str]:
-        return {"ipynb": "Notebook", "html": "HTML"}
+        return {"ipynb": "Notebook", "html": "HTML", "json": "JSON"}
 
 
 class StaticEnvironmentManager(EnvironmentManager):

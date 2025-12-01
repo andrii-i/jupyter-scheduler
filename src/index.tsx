@@ -9,11 +9,13 @@ import {
   showDialog,
   WidgetTracker
 } from '@jupyterlab/apputils';
+import { DocumentRegistry } from '@jupyterlab/docregistry';
 import { FileBrowser, IFileBrowserFactory } from '@jupyterlab/filebrowser';
 import { ILauncher } from '@jupyterlab/launcher';
 import { INotebookTracker } from '@jupyterlab/notebook';
 import { Contents, ServerConnection } from '@jupyterlab/services';
 import { ITranslator } from '@jupyterlab/translation';
+import { LabIcon } from '@jupyterlab/ui-components';
 
 import AdvancedOptions from './advanced-options';
 import {
@@ -40,6 +42,28 @@ export namespace CommandIDs {
 
 export const NotebookJobsPanelId = 'notebook-jobs-panel';
 export { Scheduler } from './tokens';
+
+/**
+ * Icon for QASM quantum circuit files.
+ */
+const qasmIcon = new LabIcon({
+  name: '@jupyterlab/scheduler:qasm-icon',
+  svgstr:
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="#1976d2" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>'
+});
+
+/**
+ * The file type for QASM quantum circuit files.
+ */
+const qasmFileType: DocumentRegistry.IFileType = {
+  name: 'qasm',
+  displayName: 'QASM File',
+  mimeTypes: ['text/x-qasm'],
+  extensions: ['.qasm'],
+  fileFormat: 'text',
+  contentType: 'file',
+  icon: qasmIcon
+};
 
 type EventLog = {
   body: { name: string; detail?: string };
@@ -197,6 +221,9 @@ function activatePlugin(
   const trans = translator.load('jupyterlab');
   const api = new SchedulerService({});
   verifyServerExtension({ api, translator });
+
+  // Register QASM file type so file browser shows proper icon and data-file-type="qasm"
+  app.docRegistry.addFileType(qasmFileType);
 
   const { commands } = app;
   const fileBrowserTracker = browserFactory.tracker;

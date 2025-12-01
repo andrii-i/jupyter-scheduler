@@ -443,11 +443,19 @@ class Scheduler(BaseScheduler):
 
         input_path = os.path.join(self.root_dir, model.input_uri)
         if not self.execution_manager_class.validate(self.execution_manager_class, input_path):
-            raise SchedulerError(
-                """There is no kernel associated with the notebook. Please open
+            ext = os.path.splitext(input_path)[1]
+            if ext == ".qasm":
+                raise SchedulerError(
+                    "Invalid QASM file. File must contain valid OpenQASM syntax."
+                )
+            elif ext == ".ipynb":
+                raise SchedulerError(
+                    """There is no kernel associated with the notebook. Please open
                     the notebook, select a kernel, and re-submit the job to execute.
                     """
-            )
+                )
+            else:
+                raise SchedulerError(f"Cannot execute file with extension {ext}")
 
         with self.db_session() as session:
             if model.idempotency_token:

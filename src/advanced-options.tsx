@@ -16,6 +16,33 @@ const AdvancedOptions = (
 
   const trans = useTranslator('jupyterlab');
 
+  // Check if this is a QASM file
+  const isQasmFile = props.model.inputFile?.endsWith('.qasm');
+
+  // Helper to get parameter value by name
+  const getParamValue = (name: string): string => {
+    const param = props.model.parameters?.find(p => p.name === name);
+    return param?.value?.toString() ?? '';
+  };
+
+  // Helper to set parameter value by name
+  const setParamValue = (name: string, value: string) => {
+    if (props.jobsView !== JobsView.CreateForm) {
+      return;
+    }
+    const params = [...(props.model.parameters ?? [])];
+    const idx = params.findIndex(p => p.name === name);
+    if (idx >= 0) {
+      params[idx] = { name, value };
+    } else {
+      params.push({ name, value });
+    }
+    props.handleModelChange({
+      ...props.model,
+      parameters: params
+    });
+  };
+
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (props.jobsView !== JobsView.CreateForm) {
       return;
@@ -146,6 +173,25 @@ const AdvancedOptions = (
   const idemTokenId = `${formPrefix}${idemTokenName}`;
   return (
     <Stack spacing={4}>
+      {/* QASM-specific options */}
+      {isQasmFile && props.jobsView === JobsView.CreateForm && (
+        <>
+          <FormLabel component="legend">
+            {trans.__('QASM Execution Options')}
+          </FormLabel>
+          <TextField
+            label={trans.__('Shots')}
+            type="number"
+            variant="outlined"
+            value={getParamValue('shots') || '1000'}
+            onChange={e => setParamValue('shots', e.target.value)}
+            helperText={trans.__('Number of measurement samples')}
+            id={`${formPrefix}shots`}
+            name="shots"
+            inputProps={{ min: 1 }}
+          />
+        </>
+      )}
       {props.jobsView === JobsView.JobDetail && (
         <LabeledValue
           label={idemTokenLabel}

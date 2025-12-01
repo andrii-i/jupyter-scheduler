@@ -1,4 +1,5 @@
 import io
+import json
 import os
 import shutil
 import tarfile
@@ -120,9 +121,18 @@ class ExecutionManager(ABC):
 
 
 class DefaultExecutionManager(ExecutionManager):
-    """Default execution manager that executes notebooks"""
+    """Default execution manager that executes notebooks and QASM files"""
 
     def execute(self):
+        input_path = self.staging_paths["input"]
+
+        if input_path.endswith(".qasm"):
+            self._execute_qasm()
+        else:
+            self._execute_notebook()
+
+    def _execute_notebook(self):
+        """Execute a Jupyter notebook."""
         job = self.model
 
         with open(self.staging_paths["input"], encoding="utf-8") as f:
@@ -143,6 +153,51 @@ class DefaultExecutionManager(ExecutionManager):
         finally:
             self.add_side_effects_files(staging_dir)
             self.create_output_files(job, nb)
+
+    def _execute_qasm(self):
+        """Execute an OpenQASM file on Braket LocalSimulator."""
+        from braket.devices import LocalSimulator
+        from braket.ir.openqasm import Program
+
+        job = self.model
+        params = job.parameters or {}
+
+        with open(self.staging_paths["input"], encoding="utf-8") as f:
+            qasm_source = f.read()
+
+        shots = int(params.get("shots", 1000))
+
+        inputs = None
+        if "inputs" in params:
+            inputs_value = params["inputs"]
+            inputs = json.loads(inputs_value) if isinstance(inputs_value, str) else inputs_value
+
+        device = LocalSimulator()
+        program = Program(source=qasm_source)
+        task = device.run(program, shots=shots, inputs=inputs)
+        result = task.result()
+
+        self._create_qasm_output_files(job, result)
+
+    def _create_qasm_output_files(self, job: DescribeJob, result):
+        """Create output files from QASM execution results."""
+        for output_format in job.output_formats:
+            output_path = self.staging_paths.get(output_format)
+            if not output_path:
+                continue
+
+            if output_format == "json":
+                output = json.dumps(
+                    {
+                        "measurement_counts": dict(result.measurement_counts),
+                        "measurement_probabilities": result.measurement_probabilities,
+                        "measured_qubits": result.measured_qubits,
+                        "shots": result.task_metadata.shots,
+                    },
+                    indent=2,
+                )
+                with fsspec.open(output_path, "w", encoding="utf-8") as f:
+                    f.write(output)
 
     def add_side_effects_files(self, staging_dir: str):
         """Scan for side effect files potentially created after input file execution and update the job's packaged_files with these files"""
@@ -191,14 +246,31 @@ class DefaultExecutionManager(ExecutionManager):
         }
 
     def validate(cls, input_path: str) -> bool:
+        if input_path.endswith(".qasm"):
+            return cls._validate_qasm(input_path)
+        return cls._validate_notebook(input_path)
+
+    @classmethod
+    def _validate_notebook(cls, input_path: str) -> bool:
+        """Validate notebook has a kernel specified."""
         with open(input_path, encoding="utf-8") as f:
             nb = nbformat.read(f, as_version=4)
             try:
                 nb.metadata.kernelspec["name"]
-            except:
+            except Exception:
                 return False
             else:
                 return True
+
+    @classmethod
+    def _validate_qasm(cls, input_path: str) -> bool:
+        """Validate QASM file has valid OpenQASM content."""
+        try:
+            with open(input_path, encoding="utf-8") as f:
+                content = f.read()
+            return "qubit" in content or "qreg" in content or "OPENQASM" in content
+        except Exception:
+            return False
 
 
 class ArchivingExecutionManager(DefaultExecutionManager):
