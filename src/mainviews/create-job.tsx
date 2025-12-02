@@ -463,6 +463,12 @@ export function CreateJob(props: ICreateJobProps): JSX.Element {
 
   const log = useEventLogger();
 
+  // For QASM files, filter out 'shots' from parameters display (it's shown in QASM Execution Options)
+  const isQasmFile = props.model.inputFile?.endsWith('.qasm');
+  const displayedParameters = isQasmFile
+    ? (props.model.parameters || []).filter(p => p.name !== 'shots')
+    : props.model.parameters || [];
+
   return (
     <Box sx={{ p: 4 }}>
       <form className={`${formPrefix}form`} onSubmit={e => e.preventDefault()}>
@@ -519,6 +525,7 @@ export function CreateJob(props: ICreateJobProps): JSX.Element {
             environmentList={environmentList}
             environment={props.model.environment}
             value={props.model.outputFormats || []}
+            inputFile={props.model.inputFile}
           />
           <ComputeTypePicker
             label={trans.__('Compute type')}
@@ -533,7 +540,7 @@ export function CreateJob(props: ICreateJobProps): JSX.Element {
             label={trans.__('Parameters')}
             name={'parameters'}
             id={`${formPrefix}parameters`}
-            value={props.model.parameters || []}
+            value={displayedParameters}
             onChange={handleInputChange}
             addParameter={addParameter}
             removeParameter={removeParameter}

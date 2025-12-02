@@ -16,6 +16,7 @@ export type OutputFormatPickerProps = {
   environmentList: Scheduler.IRuntimeEnvironment[];
   onChange: (event: ChangeEvent<HTMLInputElement>) => void;
   value: string[];
+  inputFile?: string;
 };
 
 export function outputFormatsForEnvironment(
@@ -33,10 +34,16 @@ export function outputFormatsForEnvironment(
 export function OutputFormatPicker(
   props: OutputFormatPickerProps
 ): JSX.Element | null {
-  const outputFormats = outputFormatsForEnvironment(
+  const isQasmFile = props.inputFile?.endsWith('.qasm');
+  let outputFormats = outputFormatsForEnvironment(
     props.environmentList,
     props.environment
   );
+
+  // For QASM files, filter out notebook format (not applicable)
+  if (isQasmFile && outputFormats) {
+    outputFormats = outputFormats.filter(of => of.name !== 'ipynb');
+  }
 
   // Don't display anything, not even the label, if there are no output formats
   if (outputFormats === null || outputFormats.length === 0) {
