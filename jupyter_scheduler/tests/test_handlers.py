@@ -143,7 +143,8 @@ async def test_get_jobs_for_single_job(jp_fetch):
         response = await jp_fetch("scheduler", "jobs", encoded_job_id, method="GET")
 
         # Handler passes full job_id (with backend prefix) to scheduler
-        mock_get_job.assert_called_once_with(encoded_job_id)
+        # call_async passes job_files=True as positional arg (default from handler)
+        mock_get_job.assert_called_once_with(encoded_job_id, True)
         assert response.code == 200
         body = json.loads(response.body)
         assert body["job_id"] == raw_job_id

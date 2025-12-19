@@ -1,3 +1,4 @@
+import asyncio
 import multiprocessing as mp
 import os
 import random
@@ -802,6 +803,72 @@ class Scheduler(BaseScheduler):
         staging_paths["input"] = os.path.join(self.staging_path, id, model.input_filename)
 
         return staging_paths
+
+    # === ASYNC WRAPPERS ===
+    # These methods run blocking operations in a thread pool to avoid blocking the event loop.
+    # Subclasses (e.g., BraketScheduler) can override these to add custom async behavior.
+
+    async def get_job_async(self, job_id: str, job_files: bool = True) -> DescribeJob:
+        """Async wrapper for get_job."""
+        return await asyncio.to_thread(self.get_job, job_id, job_files)
+
+    async def list_jobs_async(self, query: ListJobsQuery) -> ListJobsResponse:
+        """Async wrapper for list_jobs."""
+        return await asyncio.to_thread(self.list_jobs, query)
+
+    async def update_job_async(self, job_id: str, model: UpdateJob):
+        """Async wrapper for update_job."""
+        return await asyncio.to_thread(self.update_job, job_id, model)
+
+    async def create_job_async(self, model: CreateJob) -> str:
+        """Async wrapper for create_job."""
+        return await asyncio.to_thread(self.create_job, model)
+
+    async def delete_job_async(self, job_id: str):
+        """Async wrapper for delete_job."""
+        return await asyncio.to_thread(self.delete_job, job_id)
+
+    async def count_jobs_async(self, query: CountJobsQuery) -> int:
+        """Async wrapper for count_jobs."""
+        return await asyncio.to_thread(self.count_jobs, query)
+
+    async def stop_job_async(self, job_id: str):
+        """Async wrapper for stop_job."""
+        return await asyncio.to_thread(self.stop_job, job_id)
+
+    async def get_job_definition_async(self, job_definition_id: str) -> DescribeJobDefinition:
+        """Async wrapper for get_job_definition."""
+        return await asyncio.to_thread(self.get_job_definition, job_definition_id)
+
+    async def list_job_definitions_async(
+        self, query: ListJobDefinitionsQuery
+    ) -> ListJobDefinitionsResponse:
+        """Async wrapper for list_job_definitions."""
+        return await asyncio.to_thread(self.list_job_definitions, query)
+
+    async def create_job_definition_async(self, model: CreateJobDefinition) -> str:
+        """Async wrapper for create_job_definition."""
+        return await asyncio.to_thread(self.create_job_definition, model)
+
+    async def update_job_definition_async(self, job_definition_id: str, model: UpdateJobDefinition):
+        """Async wrapper for update_job_definition."""
+        return await asyncio.to_thread(self.update_job_definition, job_definition_id, model)
+
+    async def delete_job_definition_async(self, job_definition_id: str):
+        """Async wrapper for delete_job_definition."""
+        return await asyncio.to_thread(self.delete_job_definition, job_definition_id)
+
+    async def create_job_from_definition_async(
+        self, job_definition_id: str, model: CreateJobFromDefinition
+    ):
+        """Async wrapper for create_job_from_definition."""
+        return await asyncio.to_thread(self.create_job_from_definition, job_definition_id, model)
+
+    async def get_staging_paths_async(
+        self, model: Union[DescribeJob, DescribeJobDefinition]
+    ) -> Dict[str, str]:
+        """Async wrapper for get_staging_paths."""
+        return await asyncio.to_thread(self.get_staging_paths, model)
 
 
 class ArchivingScheduler(Scheduler):
